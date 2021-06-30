@@ -540,9 +540,9 @@ func (c *Client) Start() (addr net.Addr, err error) {
 	if c.config.User != 0 && c.config.Group != 0 {
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			Credential: &syscall.Credential{
-				Uid:    c.config.User,
-				Gid:    c.config.Group,
-				Groups: []uint32{c.config.Group},
+				Uid:         c.config.User,
+				Gid:         c.config.Group,
+				NoSetGroups: true,
 			},
 		}
 	}
