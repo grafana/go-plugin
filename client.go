@@ -20,6 +20,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	hclog "github.com/hashicorp/go-hclog"
@@ -203,6 +204,9 @@ type ClientConfig struct {
 	//
 	// You cannot Reattach to a server with this option enabled.
 	AutoMTLS bool
+
+	User  uint32
+	Group uint32
 }
 
 // ReattachConfig is used to configure a client to reattach to an
@@ -530,6 +534,18 @@ func (c *Client) Start() (addr net.Addr, err error) {
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Env = append(cmd.Env, env...)
 	cmd.Stdin = os.Stdin
+
+	// Setup uid and gid for the subproceses to enable the operator
+	// to control what kind local access the plugin should have.
+	if c.config.User != 0 && c.config.Group != 0 {
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{
+				Uid:    c.config.User,
+				Gid:    c.config.Group,
+				Groups: []uint32{c.config.Group},
+			},
+		}
+	}
 
 	cmdStdout, err := cmd.StdoutPipe()
 	if err != nil {
